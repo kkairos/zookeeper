@@ -4,6 +4,16 @@ import argparse
 import textwrap
 import os
 
+# notes:
+#
+#	* 0ROBERT.ZZT should register no STK elements but will demonstrate cleanly how some such things might have been generated
+#	* 0ROBTEST.ZZT should register no STK elements (torch/forest/energizer/ammo/water colors and resulting #put things treated as non-stk)
+#	* to do:
+#		* create a "tier" of STK looking for torch/forest/energizer/ammo colored things (being treated as non-STK right now)
+#		* & give an option to look at that separately from less "hackable" STK
+#		* export to CSV
+#		* look at combining with codesize.py or creating a linking .py file for an "impressiveness"/"pretentiousness" meter
+#
 # tells you the amount of elements which are STK colors in a board. the commands below
 # are NOT case-sensitive.
 #
@@ -20,6 +30,7 @@ import os
 #			python stk.py dir SUBDIR		analyze all .ZZT files in dubdirectory SUBDIR
 #
 # will also tell you if there's reason to suspect a corrupt board.
+#
 # to-do: introduce a tier of classification for torch, forest, ammo and energizer colors as opposed to full-on STK
 
 def stk_check(zzts,details=False):
