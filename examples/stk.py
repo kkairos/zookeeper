@@ -7,6 +7,9 @@ import os
 # tells you the amount of elements which are STK colors in a board. the commands below
 # are NOT case-sensitive.
 #
+# thanks to asiekierka for suggesting this project and for some advice (and catching something re: element_colors[n] setup)
+# thanks to rabbitboots and dr_dos for advice
+#
 # syntax:	python stk.py world WORLD.ZZT	does just WORLD.ZZT
 #
 #			python stk.py detail WORLD.ZZT	analyze WORLD.ZZT in excruciating detail
@@ -17,63 +20,75 @@ import os
 #			python stk.py dir SUBDIR		analyze all .ZZT files in dubdirectory SUBDIR
 #
 # will also tell you if there's reason to suspect a corrupt board.
-# cheers and enjoy - kkairos / dan
+# to-do: introduce a tier of classification for torch, forest, ammo and energizer colors as opposed to full-on STK
 
 def stk_check(zzts,details=False):
 
 	# define element_colors: array of arrays
 
+	# policy: decided NOT to count cyan, brown or purple "on" dark other colors for the time being.
+	# will consider evidence of a multi-iteration loop of running, editing, savelock+debug etc.
+
 	element_colors = []
 
-	std_hacks = [3,5,6,7,9,10,11,12,13,14,15,20,31,47,63,79,95,111,127, 143,191, 223, 239]
+	std_hacks = [3,5,6,7,9,10,11,12,13,14,15,20,31,47,63,79,95,111,127,143,191, 223, 239, 159, 149, 32,112,249]
+	std_waterhacks = [121,122,123,124,125,126]
+	std_doors = [3,5,6,7,9,10,11,12,13,14,15,20,31,47,63,79,95,111,127,143,175,191,207, 223,239]
 	pascolors = [15,31,47,63,79,95,111,127]
+	text_chars = []
 	
+	for x in range(32,127):
+		text_chars.append(x)
+
 	for x in range(0,54):
 		element_colors.append([])
 	
-	element_colors[7] = std_hacks #gem
-	element_colors[8] = std_hacks #Key
-	element_colors[9] = std_hacks #door
+	element_colors[7] = std_hacks.copy() #gem
+	element_colors[7].append(112)
+	element_colors[8] = std_hacks.copy() #Key
+	element_colors[9] = std_doors.copy() #door
 	element_colors[11] = pascolors #Passage"
-	element_colors[12] = [15] #duplicator
-	element_colors[13] = std_hacks #Bomb"
-	element_colors[16] = std_hacks #Clockwise Conveyor"
-	element_colors[17] = std_hacks #Counter Clockwise Conveyor"
-	element_colors[19] = std_hacks #water
-	element_colors[21] = std_hacks #Solid Wall"
-	element_colors[22] = std_hacks #Normal Wall"
-	element_colors[23] = std_hacks #Breakable Wall"
-	element_colors[24] = std_hacks #Boulder"
-	element_colors[25] = std_hacks #Slider (NS)"
-	element_colors[26] = std_hacks #Slider (EW)"
-	element_colors[27] = std_hacks #Fake Wall"
-	element_colors[28] = std_hacks #Invisible Wall"
-	element_colors[29] = std_hacks #Blinkwall
-	element_colors[30] = std_hacks #Transporter"
-	element_colors[31] = std_hacks #Line Wall"
-	element_colors[33] = std_hacks #H-Blinkray"
-	element_colors[36] = std_hacks #Object"
-	element_colors[37] = std_hacks #Slime
-	element_colors[39] = std_hacks #spinning gun
-	element_colors[40] = std_hacks #Pusher
-	element_colors[43] = std_hacks #V-Blinkray"
-	element_colors[44] = std_hacks #head
-	element_colors[45] = std_hacks #linewalls
+	element_colors[12] = [15,31,127] #duplicator
+	element_colors[13] = std_hacks.copy() + std_waterhacks.copy() #Bomb"
+	element_colors[16] = std_hacks.copy() #Clockwise Conveyor"
+	element_colors[17] = std_hacks.copy() #Counter Clockwise Conveyor"
+	element_colors[19] = std_hacks.copy() #water
+	element_colors[21] = std_hacks.copy() #Solid Wall"
+	element_colors[22] = std_hacks.copy() #Normal Wall"
+	element_colors[23] = std_hacks.copy() #Breakable Wall"
+	element_colors[24] = std_hacks.copy() #Boulder"
+	element_colors[25] = std_hacks.copy() #Slider (NS)"
+	element_colors[26] = std_hacks.copy() #Slider (EW)"
+	element_colors[27] = std_hacks.copy() #Fake Wall"
+	element_colors[28] = std_hacks.copy() #Invisible Wall"
+	element_colors[29] = std_hacks.copy() + std_waterhacks.copy() #Blinkwall
+	element_colors[30] = std_hacks.copy() + std_waterhacks.copy() #Transporter"
+	element_colors[31] = std_hacks.copy() #Line Wall"
+	element_colors[33] = std_hacks.copy() #H-Blinkray"
+	element_colors[36] = std_hacks.copy() + std_waterhacks.copy() #Object"
+	element_colors[37] = std_hacks.copy() + std_waterhacks.copy() #Slime
+	element_colors[39] = std_hacks.copy() + std_waterhacks.copy() #spinning gun
+	element_colors[40] = std_hacks.copy() + std_waterhacks.copy() #Pusher
+	element_colors[43] = std_hacks.copy() #V-Blinkray"
+	element_colors[44] = std_hacks.copy() + std_waterhacks.copy() + [0] #head
+	element_colors[45] = std_hacks.copy() + std_waterhacks.copy() + [0] #segment
 
 	element_colors[5] = [3] #ammo
 	element_colors[6] = [6] #torch
 	element_colors[14] = [5] #Energizer
-	element_colors[19] = std_hacks #water
+	element_colors[19] = std_hacks.copy() #water
 	element_colors[19].append(159)
 	element_colors[19].append(249)
 	element_colors[20] = [32] #Forest"
 	element_colors[32] = [] #Ricochet"
 	element_colors[32].append(10) #Ricochet"
-	element_colors[34] = [6] #Bear
-	element_colors[35] = [13] #Ruffian
+	element_colors[34] = [6,118] #Bear
+	element_colors[35] = [13,125] #Ruffian
 	element_colors[38] = [7,23,39,55,71,87,103,119] #shark
-	element_colors[41] = [12] #Lion
-	element_colors[42] = [11] #Tiger
+	element_colors[41] = [12,124] #Lion
+	element_colors[42] = [11,123] #Tiger
+
+	text_elements = [47,48,49,50,51,52,53]
 
 	lines = [("")]
 
@@ -96,8 +111,15 @@ def stk_check(zzts,details=False):
 					if len(element_colors[element.id]) > 0:
 						if element.color_id not in element_colors[element.id]:
 							stk_found+=1
-							element_x = (element.tile % 60)
-							element_y = (element.tile // 60)
+							element_x,element_y = (element.tile % 60),(element.tile // 60)
+							if details:
+								print( zzt[0] + " STK element on " + board.title + " " + str(element_x) + "," + str(element_y) + ": " + str(element.color_id) )
+						else:
+							non_stk_found+=1
+					elif element.id in text_elements:
+						if element.character not in text_chars:
+							stk_found+=1
+							element_x,element_y = (element.tile % 60),(element.tile // 60)
 							if details:
 								print( zzt[0] + " STK element on " + board.title + " " + str(element_x) + "," + str(element_y) + ": " + str(element.color_id) )
 						else:
